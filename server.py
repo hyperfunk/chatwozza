@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-import socket 
+import socket
 import select
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,23 +16,23 @@ wset = [ ]
 
 while True:
 
-  readable, writable, excepts = select.select(rset, wset, rset)
+    readable, writable, excepts = select.select(rset, wset, rset)
 
-  for socket in readable:
+    for sock in readable:
 
-    if socket is s:
-      fd, ip = s.accept()
+        if sock is s:
+            fd, ip = s.accept()
 
-      if ip != '':
-        print "Connection from " + ip[0]
-        rset.append(fd)
+            if ip != '':
+                print "Connection from {addr}".format(addr=ip[0])
+                rset.append(fd)
 
-    else:
-      data = socket.recv(4096)
+        else:
+            data = sock.recv(4096)
+            if data:
+                for client in [ c for c in rset if c not in [s,sock] ]:
+                    client.send(data)
+            else:
+                sock.close()
+                rset.remove(sock)
 
-      if data:
-        socket.send(data)
-      else:
-        socket.close()
-        rset.remove(socket)
-        
