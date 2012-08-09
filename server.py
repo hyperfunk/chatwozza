@@ -18,7 +18,7 @@ wset = [ ]
 users = {}
 
 def username_prompt(sock):
-    sock.send("Please choose a user name:")
+    sock.send("Please choose a user name: ")
 
 while True:
 
@@ -42,12 +42,13 @@ while True:
                             client.send("{un}: {s}".format(un=users[sock],
                                                            s=data))
                 else:
-                    if data in users.values():
+                    username = data[:-2]
+                    if username in users.values():
                         sock.send("Username already taken\n")
                         username_prompt(sock)
                     else:
                         # each sock.recv string comes with +"empty_chat"+"\n"
-                        users[sock] = data[:-2]
+                        users[sock] = username
 
             else:
                 sock.close()
