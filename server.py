@@ -40,8 +40,8 @@ def run_server():
                     if sock in users.keys():
                         for client in users.keys():
                             if client is not sock:
-                                client.send("{un}: {s}".format(un=users[sock],
-                                                               s=data))
+                                client.send("{u}: {msg}".format(u=users[sock],
+                                                                msg=data))
                     else:
                         username = data[:-2]
                         if username in users.values():
