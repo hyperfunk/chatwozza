@@ -14,6 +14,12 @@ rset = [ s ]
 # Null write set
 wset = [ ]
 
+# socket:username dict
+users = {}
+
+def username_prompt(sock):
+    sock.send("Please choose a user name:")
+
 while True:
 
     readable, writable, excepts = select.select(rset, wset, rset)
@@ -26,12 +32,21 @@ while True:
             if ip != '':
                 print "Connection from {addr}".format(addr=ip[0])
                 rset.append(fd)
-
+                username_prompt(fd)
         else:
             data = sock.recv(4096)
             if data:
-                for client in [ c for c in rset if c not in [s,sock] ]:
-                    client.send(data)
+                if sock in users.keys():
+                    for client in users.keys():
+                        if client is not sock:
+                            client.send("{un}: {s}".format(un=users[sock],
+                                                           s=data))
+                else:
+                    if data in users.values():
+                        sock.send("Username already taken\n")
+                        username_prompt(sock)
+                    else:
+                        users[sock] = data
             else:
                 sock.close()
                 rset.remove(sock)
