@@ -46,7 +46,9 @@ while True:
                         sock.send("Username already taken\n")
                         username_prompt(sock)
                     else:
-                        users[sock] = data
+                        # each sock.recv string comes with +"empty_chat"+"\n"
+                        users[sock] = data[:-2]
+
             else:
                 sock.close()
                 rset.remove(sock)
