@@ -1,0 +1,7 @@
+Probably do the client in curses
+
+Possibly a GUI for the n00bs out there too (in Tk)
+
+synical: i tried writing a basic client that just connected and automatically
+sent a message but it crashed both the clietn and the server :D maybe something
+to talk about :D
