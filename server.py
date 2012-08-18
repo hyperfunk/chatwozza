@@ -57,6 +57,8 @@ def run_server():
                 else:
                     sock.close()
                     rset.remove(sock)
+		    users.pop(sock)
+		    
 
 if __name__=='__main__':
     run_server()
