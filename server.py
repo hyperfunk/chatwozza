@@ -3,7 +3,45 @@
 import socket
 import select
 
-def run_server():
+_USERNAME_PROMPT = "Please choose a user name: "
+
+def server_loop(server_socket, users, rset, wset, eset):
+    readable, writable, excepts = select.select(rset, wset, eset)
+
+    for sock in readable:
+
+        if sock is server_socket:
+            fd, ip = sock.accept()
+
+            if ip != '':
+                print "Connection from {addr}".format(addr=ip[0])
+                rset.append(fd)
+                fd.send(_USERNAME_PROMPT)
+        else:
+            data = sock.recv(4096)
+            if data:
+                if sock in users:
+                    for client in users:
+                        if client is not sock:
+                            client.send("{u}: {msg}".format(u=users[sock],
+                                                            msg=data))
+                else:
+                    username = data[:-1]
+                    if username in users.values():
+                        sock.send("Username already taken\n")
+                        sock.send(_USERNAME_PROMPT)
+                    else:
+                        # TODO: what does RFC 1459 and 2812 say (need to read)
+                        # about EOM
+                        users[sock] = username
+                        sock.send("Welcome {u}".format(u=username))
+
+            else:
+                sock.close()
+                rset.remove(sock)
+                users.pop(sock)
+
+if __name__=='__main__':
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     s.bind(("0.0.0.0", 8000))
@@ -18,47 +56,8 @@ def run_server():
     # socket:username dict
     users = {}
 
-    def username_prompt(sock):
-        sock.send("Please choose a user name: ")
-
-    while True:
-
-        readable, writable, excepts = select.select(rset, wset, rset)
-
-        for sock in readable:
-
-            if sock is s:
-                fd, ip = s.accept()
-
-                if ip != '':
-                    print "Connection from {addr}".format(addr=ip[0])
-                    rset.append(fd)
-                    username_prompt(fd)
-            else:
-                data = sock.recv(4096)
-                if data:
-                    if sock in users.keys():
-                        for client in users.keys():
-                            if client is not sock:
-                                client.send("{u}: {msg}".format(u=users[sock],
-                                                                msg=data))
-                    else:
-                        username = data[:-1]
-                        if username in users.values():
-                            sock.send("Username already taken\n")
-                            username_prompt(sock)
-                        else:
-                            # each sock.recv string ends with "empty_chat"+"\n"
-			    # this appears to be telnet behaviour - it sends carriage return line feed
-			    # the client only sends a newline so I have changed to 1 for now
-                            users[sock] = username
-			    sock.send("Welcome {u}".format(u=username))
-
-                else:
-                    sock.close()
-                    rset.remove(sock)
-		    users.pop(sock)
-		    
-
-if __name__=='__main__':
-    run_server()
+    try:
+        while True:
+            server_loop(s, users, rset, wset, rset)
+    except KeyboardInterrupt:
+        s.close()
