@@ -20,8 +20,8 @@ def server_loop(server_socket, users, rset, wset, eset):
         else:
             data = sock.recv(4096)
             if data:
-                if sock in users.keys():
-                    for client in users.keys():
+                if sock in users:
+                    for client in users:
                         if client is not sock:
                             client.send("{u}: {msg}".format(u=users[sock],
                                                             msg=data))
