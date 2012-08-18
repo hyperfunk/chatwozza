@@ -5,10 +5,7 @@ import select
 
 _USERNAME_PROMPT = "Please choose a user name: "
 
-def server_loop(server_socket, rset, wset, eset):
-    # socket:username dict
-    users = {}
-
+def server_loop(server_socket, users, rset, wset, eset):
     readable, writable, excepts = select.select(rset, wset, eset)
 
     for sock in readable:
@@ -32,7 +29,7 @@ def server_loop(server_socket, rset, wset, eset):
                     username = data[:-1]
                     if username in users.values():
                         sock.send("Username already taken\n")
-                        username_prompt(sock)
+                        sock.send(_USERNAME_PROMPT)
                     else:
                         # TODO: what does RFC 1459 and 2812 say (need to read)
                         # about EOM
@@ -56,8 +53,11 @@ if __name__=='__main__':
     # Null write set
     wset = [ ]
 
+    # socket:username dict
+    users = {}
+
     try:
         while True:
-            server_loop(s,rset, wset, rset)
+            server_loop(s, users, rset, wset, rset)
     except KeyboardInterrupt:
         s.close()
