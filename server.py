@@ -43,12 +43,14 @@ def run_server():
                                 client.send("{u}: {msg}".format(u=users[sock],
                                                                 msg=data))
                     else:
-                        username = data[:-2]
+                        username = data[:-1]
                         if username in users.values():
                             sock.send("Username already taken\n")
                             username_prompt(sock)
                         else:
                             # each sock.recv string ends with "empty_chat"+"\n"
+			    # this appears to be telnet behaviour - it sends carriage return line feed
+			    # the client only sends a newline so I have changed to 1 for now
                             users[sock] = username
 
                 else:
