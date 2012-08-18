@@ -52,6 +52,7 @@ def run_server():
 			    # this appears to be telnet behaviour - it sends carriage return line feed
 			    # the client only sends a newline so I have changed to 1 for now
                             users[sock] = username
+			    sock.send("Welcome {u}".format(u=username))
 
                 else:
                     sock.close()

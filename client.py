@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 
+import re
 import socket
 import select
 import sys
@@ -14,14 +15,26 @@ rset = [ s, sys.stdin ]
 # Null wset
 wset = []
 
+r = re.compile("Welcome.+")
+
 try:
     data = s.recv(4096)
-    sys.stdout.write(data)
-    uname = raw_input()
-    s.send(uname + "\n")
+
+    # Prompt for username until we get the welcome message
+    while True:
+        sys.stdout.write(data)
+        uname = raw_input()
+        s.send(uname + "\n")
+        data = s.recv(4096)
+
+        match = r.match(data)
+        if not match:
+            continue
+        else:
+	    print data
+            break
 
     while True:
-
 	readable, writable, excepts = select.select(rset, wset, rset)
 
 	for fd in readable:
@@ -32,7 +45,7 @@ try:
 		    s.send(data + "\n")
 	    else:
 		data = s.recv(4096)
-		print data[:-1]
+		print data.rstrip('\n')
 
 finally:
     s.close()
