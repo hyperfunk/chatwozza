@@ -15,7 +15,11 @@ rset = [ s, sys.stdin ]
 # Null wset
 wset = []
 
-r = re.compile("Welcome.+")
+# so could totally use some more "obscure" leading key that gets stripped
+
+_WELCOME_KEY = "Welcome"
+
+r = re.compile("{key}.+".format(key=_WELCOME_KEY))
 
 try:
     data = s.recv(4096)
@@ -26,26 +30,25 @@ try:
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
-
-        match = r.match(data)
-        if not match:
-            continue
-        else:
-	    print data
+        if r.match(data):
+            print data
             break
 
     while True:
-	readable, writable, excepts = select.select(rset, wset, rset)
+        readable, writable, excepts = select.select(rset, wset, rset)
 
-	for fd in readable:
-	    
-	    if fd is sys.stdin:
-		data = raw_input()
-		if data:
-		    s.send(data + "\n")
-	    else:
-		data = s.recv(4096)
-		print data.rstrip('\n')
+        for fd in readable:
+
+            if fd is sys.stdin:
+                data = raw_input()
+            if data:
+                s.send(data + "\n")
+            else:
+                data = s.recv(4096)
+                print data.rstrip('\n')
+
+except KeyboardInterrupt:
+    pass
 
 finally:
     s.close()
