@@ -41,8 +41,8 @@ try:
 
             if fd is sys.stdin:
                 data = raw_input()
-            if data:
-                s.send(data + "\n")
+                if data:
+                    s.send(data + "\n")
             else:
                 data = s.recv(4096)
                 print data.rstrip('\n')
