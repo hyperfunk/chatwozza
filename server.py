@@ -3,9 +3,15 @@
 import socket
 import select
 
-_USERNAME_PROMPT = "Please choose a user name: "
+from collections import defaultdict
 
-def server_loop(server_socket, users, rset, wset, eset):
+USERNAME_PROMPT = "Please choose a user name: "
+DEFAULT_ROOM = 'main'
+
+
+def server_loop(server_socket, users, rset, wset, eset, rooms,
+        members_channels):
+
     readable, writable, excepts = select.select(rset, wset, eset)
 
     for sock in readable:
@@ -16,7 +22,7 @@ def server_loop(server_socket, users, rset, wset, eset):
             if ip != '':
                 print "Connection from {addr}".format(addr=ip[0])
                 rset.append(fd)
-                fd.send(_USERNAME_PROMPT)
+                fd.send(USERNAME_PROMPT)
         else:
             data = sock.recv(4096)
             if data:
@@ -29,11 +35,12 @@ def server_loop(server_socket, users, rset, wset, eset):
                     username = data[:-1]
                     if username in users.values():
                         sock.send("Username already taken\n")
-                        sock.send(_USERNAME_PROMPT)
+                        sock.send(USERNAME_PROMPT)
                     else:
                         # TODO: what does RFC 1459 and 2812 say (need to read)
                         # about EOM
                         users[sock] = username
+                        members_channels[sock].append(DEFAULT_ROOM)
                         sock.send("Welcome {u}".format(u=username))
 
             else:
@@ -56,8 +63,14 @@ if __name__=='__main__':
     # socket:username dict
     users = {}
 
+    # list of rooms
+    rooms = set([DEFAULT_ROOM])
+
+    # members
+    members_channels = defaultdict(list)
+
     try:
         while True:
-            server_loop(s, users, rset, wset, rset)
+            server_loop(s, users, rset, wset, rset, rooms, members_channels)
     except KeyboardInterrupt:
         s.close()
