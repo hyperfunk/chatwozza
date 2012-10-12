@@ -15,9 +15,9 @@ USERNAME_PROMPT = "%Please choose a user name: "
 DEFAULT_ROOM = 'main'
 
 def parse_message(message):
-    print message
     m_split = message.split()
     room, message = m_split[0], m_split[1:]
+    return room, message
 
 def message_room(target_room, room_members, username, data):
     for client in room_members:
@@ -59,8 +59,7 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                             room_users = room_members[target_room]
                             targets = [c for c in room_users if c is not sock]
                             username=users[sock]
-                            message_room(target_room, room_members, username,
-                                data)
+                            message_room(target_room, targets, username, data)
                 else:
                     username = data[:-1]
                     #print username
