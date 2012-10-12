@@ -10,46 +10,12 @@ from collections import defaultdict
 current_room = ''
 available_rooms = set()
 
-#def room_message_handler(): pass
-#def server_message_handler(): pass
-#def server_command_handler(): pass
-
-#message_commands=defaultdict(room_message_handler)
-#message_commands.update({ # prefix : function
-        #'%': server_message_handler,
-        #'#': server_command_handler,
-        #})
 
 def show_message(room, sender, message):
     if room == current_room:
         sys.stdout.write("{u}: {m}".format(u=sender, m=message))
         sys.stdout.flush()
     # TODO: else append to some file: needs to be efficient though
-
-def is_server_message(message):
-    return message[0] == "%"
-
-def parse_server_message(message):
-    return message[1:]
-
-def show_server_message(message):
-    show_message(current_room, "SERVER", message)
-
-def parse_room_message(message):
-    return message[0], message[1], message[2:]
-
-def is_server_command(message):
-    return message[0] == "!"
-
-def parse_server_command(message):
-    return message[1:].split()
-
-def exec_server_command(message):
-    parsed_command = parse_server_command(message)
-    command = parsed_command[0]
-    command_args = parsed_command[1:]
-    commands[command](*command_args)
-
 
 def notify_client(f):
     def notify(*args):
@@ -78,6 +44,33 @@ def join_room(room):
     current_room = room
     available_rooms.add(room)
 
+# lol enum
+ROOM_MESSAGE, SERVER_MESSAGE, SERVER_COMMAND = range(1,4)
+
+def room_message_handler(data):
+    data = data.rstrip('\n')
+    target_room, sender, message = message[0], message[1], message[2:]
+    show_message(target_room, sender, message)
+    return ROOM_MESSAGE
+
+def server_message_handler(data):
+    show_message(current_room, "SERVER", data[1:])
+    return SERVER_MESSAGE
+
+def server_command_handler(data):
+    parsed_command = data[1:].split()
+    command = parsed_command[0]
+    command_args = parsed_command[1:]
+    commands[command](*command_args)
+    return SERVER_COMMAND
+
+
+message_handlers=defaultdict(room_message_handler)
+message_handlers.update({ # prefix : function
+        '%': server_message_handler,
+        '!': server_command_handler,
+        })
+
 commands = {
         'join': join_room,
         'avail+': add_room,
@@ -100,13 +93,18 @@ try:
 
     # Prompt for username until we get the welcome message
     while True:
-        if is_server_message(data):
-            show_server_message(parse_server_message(data))
+        # could have get_handler but avoiding 1line functions
+        handler = message_handlers[data[0]]
+        handler(data)
+        # may want to make this a response to !name command from server
+        # then make the condition that currente room isn't NULL or something
+        # or !g_name (give_name) so the server intructs the cleitn what their
+        # name is
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
-        if is_server_command(data):
-            exec_server_command(data)
+        handlers = message_handlers[data[0]]
+        if handler(data) is SERVER_COMMAND:
             break
 
     while True:
@@ -120,14 +118,8 @@ try:
                                                        message=data))
             else:
                 data = s.recv(4096)
-                if is_server_command(data):
-                    exec_server_command(data)
-                elif is_server_message(data):
-                    show_server_message(parse_server_message(data))
-                else:
-                    data = data.rstrip('\n')
-                    target_room, sender, message = parse_room_message(data)
-                    show_message(target_room, sender, message)
+                handler = message_handlers[data[0]]
+                handler(data)
 
 except KeyboardInterrupt:
     pass
