@@ -8,7 +8,7 @@ import sys
 from collections import defaultdict
 
 available_rooms = set()
-current_room = ""
+CURRENT_ROOM = ""
 
 def show_message(room, sender, message):
     if room == current_room:
@@ -37,12 +37,21 @@ def is_server_command(message):
 def parse_server_command(message):
     return message[1:].split()
 
+def exec_server_command(message):
+    parsed_command = parse_server_command(message)
+    command = parsed_command[0]
+    command_args = parsed_command[1:]
+    commands[command](*command_args)
+
 
 def notify_client(f):
     def notify(*args):
         f(*args)
-        print "Current room is {r}, also in {c}".format(r=current_room,
-                c=list(available_rooms.difference([current_room])).join(','))
+        print current_room
+        print "Current room is {r}".format(r=current_room)
+        other_rooms = available_rooms.difference([current_room])
+        if len(other_rooms) > 0:
+            print "also in {c}".format(c=','.join(other_rooms))
     return notify
 
 # server command executors
@@ -58,8 +67,8 @@ def remove_room(room):
 
 @notify_client
 def join_room(room):
-    add_room(room)
     current_room = room
+    available_rooms.add(room)
 
 commands = {
         'join': join_room,
@@ -88,8 +97,8 @@ try:
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
-        if is_server_handshake(data):
-            show_server_message(parse_server_message(data))
+        if is_server_command(data):
+            exec_server_command(data)
             break
 
     while True:
@@ -104,10 +113,7 @@ try:
             else:
                 data = s.recv(4096)
                 if is_server_command(data):
-                    parsed_command = parse_server_command(data)
-                    command = parsed_command[0]
-                    command_args = parsed_command[1:]
-                    commands[command](*command_args)
+                    exec_server_command(data)
                 elif is_server_message(data):
                     show_server_message(parse_server_message(data))
                 else:
