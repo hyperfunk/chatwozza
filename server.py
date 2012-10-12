@@ -32,6 +32,13 @@ def parse_client_request(message):
     args = message[1:]
     return request, args
 
+#def client_message_handler(data): pass
+#message_handlers = defaultdict(client_message_handler)
+#message_handlers.update({
+    #'/': client_request_handler,
+    #}
+
+
 def server_loop(server_socket, users, rset, wset, eset, rooms,
         members_rooms, room_members):
 
@@ -53,7 +60,6 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                     room, message = parse_message(data)
                     if is_client_request(message[0]):
                         request, args = parse_client_request(message)
-                        print "command:", request, "args:", args
                     else:
                         avail_rooms = members_rooms[sock]
                         if room in avail_rooms:
@@ -106,6 +112,6 @@ if __name__=='__main__':
             server_loop(s, users, rset, wset, rset, rooms, members_rooms,
                     room_members)
     except KeyboardInterrupt:
-        pass
-    finally:
+        s.close()
+    except:
         s.close()
