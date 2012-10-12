@@ -5,16 +5,28 @@ import select
 
 from collections import defaultdict
 
-USERNAME_PROMPT = "Please choose a user name: "
+USERNAME_PROMPT = "!greet Please choose a user name: "
 DEFAULT_ROOM = 'main'
 
 def parse_message(message):
     m_split = message.split()
-    room, user, message = m_split[0], m_split[1], m_split[2:]
+    room, message = m_split[0], m_split[1:]
 
+def message_room(target_room, room_members, username, data):
+    for client in room_members:
+        client.send("{r} {u} {d}".format(r=target_room, u=username, d=data))
+
+def is_request(message):
+    return message[0] == '/'
+
+def parse_client_request(message):
+    m_split = message.split()
+    request = m_split[0]
+    args = m_split[1:]
+    return command, args
 
 def server_loop(server_socket, users, rset, wset, eset, rooms,
-        members_channels):
+        members_rooms, room_members):
 
     readable, writable, excepts = select.select(rset, wset, eset)
 
@@ -31,13 +43,17 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
             data = sock.recv(4096)
             if data:
                 if sock in users:
-                    target_room, sender, message = parse_message(data)
-                    avail_channels = members_channels[sock]
-                    if sender == users[sock] and target_room in avail_channels:
-                        for client in [u for u in users if u is not sock]:
-                            # TODO: need to send room to client
-                            client.send("{u}: {msg}".format(u=users[sock],
-                                                            msg=data))
+                    target_room, message = parse_message(data)
+                    if is_request(message):
+                        request, args = parse_client_request(message)
+                    else:
+                        avail_rooms = members_rooms[sock]
+                        if target_room in avail_rooms:
+                            room_users = room_members[target_room]
+                            targets = [c for c in room_users if c is not sock]
+                            username=users[sock]
+                            message_room(target_room, room_members, username,
+                                data)
                 else:
                     username = data[:-1]
                     if username in users.values():
@@ -45,8 +61,8 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                         sock.send(USERNAME_PROMPT)
                     else:
                         users[sock] = username
-                        members_channels[sock].append(DEFAULT_ROOM)
-                        channel_members[DEFAULT_ROOM].append(sock)
+                        members_rooms[sock].append(DEFAULT_ROOM)
+                        room_members[DEFAULT_ROOM].append(sock)
                         sock.send("Welcome {u}".format(u=username))
 
             else:
@@ -73,13 +89,14 @@ if __name__=='__main__':
     rooms = set([DEFAULT_ROOM])
 
     # members
-    members_channels = defaultdict(list)
+    members_rooms = defaultdict(list)
 
-    # channels
-    channel_members = defaultdict(list)
+    # rooms
+    room_members = defaultdict(list)
 
     try:
         while True:
-            server_loop(s, users, rset, wset, rset, rooms, members_channels)
+            server_loop(s, users, rset, wset, rset, rooms, members_rooms,
+                    room_members)
     except KeyboardInterrupt:
         s.close()
