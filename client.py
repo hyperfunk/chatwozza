@@ -103,7 +103,7 @@ try:
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
-        handlers = message_handlers[data[0]]
+        handler = message_handlers[data[0]]
         if handler(data) is SERVER_COMMAND:
             break
 
@@ -118,8 +118,10 @@ try:
                                                        message=data))
             else:
                 data = s.recv(4096)
-                handler = message_handlers[data[0]]
-                handler(data)
+                if data:
+                    print "received:", data, "[from server]"
+                    handler = message_handlers[data[0]]
+                    handler(data)
 
 except KeyboardInterrupt:
     pass
