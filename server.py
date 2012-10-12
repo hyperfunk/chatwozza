@@ -19,18 +19,18 @@ def parse_message(message):
     room, message = m_split[0], m_split[1:]
     return room, message
 
-def message_room(target_room, room_members, username, data):
-    for client in room_members:
-        client.send("{r} {u} {d}".format(r=target_room, u=username, d=data))
+def message_room(target_room, room_members, sender, sender_id, message):
+    targets = [c for c in room_members if c is not sender]
+    for client in targets:
+        client.send("{r} {u} {m}".format(r=target_room, u=sender_id, m=message))
 
-def is_request(message):
-    return message[0] == '/'
+def is_client_request(message_leader):
+    return message_leader[0] == '/'
 
 def parse_client_request(message):
-    m_split = message.split()
-    request = m_split[0]
-    args = m_split[1:]
-    return command, args
+    request = message[0][1:]
+    args = message[1:]
+    return request, args
 
 def server_loop(server_socket, users, rset, wset, eset, rooms,
         members_rooms, room_members):
@@ -50,16 +50,17 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
             data = sock.recv(4096)
             if data:
                 if sock in users:
-                    target_room, message = parse_message(data)
-                    if is_request(message):
+                    room, message = parse_message(data)
+                    if is_client_request(message[0]):
                         request, args = parse_client_request(message)
+                        print "command:", request, "args:", args
                     else:
                         avail_rooms = members_rooms[sock]
-                        if target_room in avail_rooms:
-                            room_users = room_members[target_room]
-                            targets = [c for c in room_users if c is not sock]
-                            username=users[sock]
-                            message_room(target_room, targets, username, data)
+                        if room in avail_rooms:
+                            room_users = room_members[room]
+                            text = " ".join(message)
+                            message_room(room, room_users, sock, users[sock],
+                                    text)
                 else:
                     username = data[:-1]
                     #print username
@@ -109,4 +110,6 @@ if __name__=='__main__':
             server_loop(s, users, rset, wset, rset, rooms, members_rooms,
                     room_members)
     except KeyboardInterrupt:
+        pass
+    finally:
         s.close()
