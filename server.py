@@ -8,6 +8,10 @@ from collections import defaultdict
 USERNAME_PROMPT = "Please choose a user name: "
 DEFAULT_ROOM = 'main'
 
+def parse_message(message):
+    m_split = message.split()
+    room, user, message = m_split[0], m_split[1], m_split[2:]
+
 
 def server_loop(server_socket, users, rset, wset, eset, rooms,
         members_channels):
@@ -27,8 +31,11 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
             data = sock.recv(4096)
             if data:
                 if sock in users:
-                    for client in users:
-                        if client is not sock:
+                    target_room, sender, message = parse_message(data)
+                    avail_channels = members_channels[sock]
+                    if sender == users[sock] and target_room in avail_channels:
+                        for client in [u for u in users if u is not sock]:
+                            # TODO: need to send room to client
                             client.send("{u}: {msg}".format(u=users[sock],
                                                             msg=data))
                 else:
@@ -37,10 +44,9 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                         sock.send("Username already taken\n")
                         sock.send(USERNAME_PROMPT)
                     else:
-                        # TODO: what does RFC 1459 and 2812 say (need to read)
-                        # about EOM
                         users[sock] = username
                         members_channels[sock].append(DEFAULT_ROOM)
+                        channel_members[DEFAULT_ROOM].append(sock)
                         sock.send("Welcome {u}".format(u=username))
 
             else:
@@ -68,6 +74,9 @@ if __name__=='__main__':
 
     # members
     members_channels = defaultdict(list)
+
+    # channels
+    channel_members = defaultdict(list)
 
     try:
         while True:
