@@ -12,7 +12,8 @@ current_room = ""
 
 def show_message(room, sender, message):
     if room == current_room:
-        print "{u}: {m}".format(u=sender, m=message),
+        sys.stdout.write("{u}: {m}".format(u=sender, m=message))
+        sys.stdout.flush()
     # TODO: else append to some file: needs to be efficient though
 
 def is_server_message(message):
@@ -99,7 +100,6 @@ try:
                                                        message=data))
             else:
                 data = s.recv(4096)
-                data = data.rstrip('\n')
                 if is_server_command(data):
                     parsed_command = parse_server_command(data)
                     command = parsed_command[0]
@@ -108,6 +108,7 @@ try:
                 elif is_server_message(data):
                     show_server_message(parse_server_message(data))
                 else:
+                    data = data.rstrip('\n')
                     target_room, sender, message = parse_room_message(data)
                     show_message(target_room, sender, message)
 
