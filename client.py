@@ -54,14 +54,8 @@ def join_room(room):
 commands = {
         'join': join_room,
         'avail+': add_room,
-        'avail-': remove_room
+        'avail-': remove_room,
         }
-
-command_report {
-        'join': "Joined room {1}",
-        'avail+': "Room {1} now available to join",
-        'avail-': "Room {1} no longer available"
-    }
 
 try:
     data = s.recv(4096)
