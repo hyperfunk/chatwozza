@@ -10,6 +10,16 @@ from collections import defaultdict
 current_room = ''
 available_rooms = set()
 
+#def room_message_handler(): pass
+#def server_message_handler(): pass
+#def server_command_handler(): pass
+
+#message_commands=defaultdict(room_message_handler)
+#message_commands.update({ # prefix : function
+        #'%': server_message_handler,
+        #'#': server_command_handler,
+        #})
+
 def show_message(room, sender, message):
     if room == current_room:
         sys.stdout.write("{u}: {m}".format(u=sender, m=message))
@@ -24,9 +34,6 @@ def parse_server_message(message):
 
 def show_server_message(message):
     show_message(current_room, "SERVER", message)
-
-def is_server_handshake(message):
-    return message[0]=="^"
 
 def parse_room_message(message):
     return message[0], message[1], message[2:]
