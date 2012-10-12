@@ -120,6 +120,7 @@ try:
                 data = s.recv(4096)
                 if data:
                     print "received:", data, "[from server]"
+                    print data[0]
                     handler = message_handlers[data[0]]
                     handler(data)
 
