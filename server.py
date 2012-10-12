@@ -1,5 +1,11 @@
 #!/usr/bin/python2
 
+#
+# could have a dict { '%' : func(), '!': func(), ... }
+# that you simply look up for message[0] the nthen pass func message [1:]
+# with a default being a callable that just prints it as though it's a user
+#
+
 import socket
 import select
 
@@ -7,8 +13,6 @@ from collections import defaultdict
 
 USERNAME_PROMPT = "%Please choose a user name: "
 DEFAULT_ROOM = 'main'
-
-MESSAGE_PREFIX = "%"
 
 def parse_message(message):
     print message

@@ -25,6 +25,9 @@ def parse_server_message(message):
 def show_server_message(message):
     show_message(current_room, "SERVER", message)
 
+def is_server_handshake(message):
+    return message[0]=="^"
+
 def parse_room_message(message):
     return message[0], message[1], message[2:]
 
@@ -36,8 +39,8 @@ def parse_server_command(message):
 
 
 def notify_client(f):
-    def notify():
-        f()
+    def notify(*args):
+        f(*args)
         print "Current room is {r}, also in {c}".format(r=current_room,
                 c=list(available_rooms.difference([current_room])).join(','))
     return notify
@@ -85,7 +88,7 @@ try:
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
-        if is_server_message(data):
+        if is_server_handshake(data):
             show_server_message(parse_server_message(data))
             break
 
