@@ -5,8 +5,10 @@ import select
 
 from collections import defaultdict
 
-USERNAME_PROMPT = "!greet Please choose a user name: "
+USERNAME_PROMPT = "%Please choose a user name: "
 DEFAULT_ROOM = 'main'
+
+MESSAGE_PREFIX = "%"
 
 def parse_message(message):
     m_split = message.split()
@@ -56,8 +58,9 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                                 data)
                 else:
                     username = data[:-1]
+                    print username
                     if username in users.values():
-                        sock.send("Username already taken\n")
+                        sock.send("%Username already taken\n")
                         sock.send(USERNAME_PROMPT)
                     else:
                         users[sock] = username

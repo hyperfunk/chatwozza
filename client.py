@@ -5,18 +5,26 @@ import socket
 import select
 import sys
 
+from collections import defaultdict
+
 available_rooms = set()
 current_room = ""
 
 def show_message(room, sender, message):
     if room == current_room:
-        print "{u}: {m}".format(u=sender, m=message)
+        print "{u}: {m}".format(u=sender, m=message),
     # TODO: else append to some file: needs to be efficient though
 
 def is_server_message(message):
     return message[0] == "%"
 
 def parse_server_message(message):
+    return message[1:]
+
+def show_server_message(message):
+    show_message(current_room, "SERVER", message)
+
+def parse_room_message(message):
     return message[0], message[1], message[2:]
 
 def is_server_command(message):
@@ -49,16 +57,11 @@ def join_room(room):
     add_room(room)
     current_room = room
 
-def print_command(*args):
-    show_message(current_room, "SERVER", " ".join(args))
-
-
-commands=defaultdict(print_command)
-commands.update({
+commands = {
         'join': join_room,
         'avail+': add_room,
         'avail-': remove_room,
-        }}
+        }
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,12 +79,13 @@ try:
 
     # Prompt for username until we get the welcome message
     while True:
-        sys.stdout.write(data)
+        if is_server_message(data):
+            show_server_message(parse_server_message(data))
         uname = raw_input()
         s.send(uname + "\n")
         data = s.recv(4096)
         if is_server_message(data):
-            print data
+            show_server_message(parse_server_message(data))
             break
 
     while True:
@@ -101,8 +105,10 @@ try:
                     command = parsed_command[0]
                     command_args = parsed_command[1:]
                     commands[command](*command_args)
+                elif is_server_message(data):
+                    show_server_message(parse_server_message(data))
                 else:
-                    target_room, sender, message = parse_server_message(data)
+                    target_room, sender, message = parse_room_message(data)
                     show_message(target_room, sender, message)
 
 except KeyboardInterrupt:
