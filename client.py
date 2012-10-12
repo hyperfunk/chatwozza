@@ -7,8 +7,8 @@ import sys
 
 from collections import defaultdict
 
+current_room = ''
 available_rooms = set()
-CURRENT_ROOM = ""
 
 def show_message(room, sender, message):
     if room == current_room:
@@ -47,7 +47,6 @@ def exec_server_command(message):
 def notify_client(f):
     def notify(*args):
         f(*args)
-        print current_room
         print "Current room is {r}".format(r=current_room)
         other_rooms = available_rooms.difference([current_room])
         if len(other_rooms) > 0:
@@ -61,12 +60,14 @@ def add_room(room):
 
 @notify_client
 def remove_room(room):
+    global current_room
     available_rooms.remove(room)
     if current_room == room:
-        current_room == available_rooms[0]
+        current_room = available_rooms[0]
 
 @notify_client
 def join_room(room):
+    global current_room
     current_room = room
     available_rooms.add(room)
 
