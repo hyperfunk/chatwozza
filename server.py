@@ -73,9 +73,7 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                         users[sock] = username
                         members_rooms[sock].append(DEFAULT_ROOM)
                         room_members[DEFAULT_ROOM].append(sock)
-                        # this all gets parsed as one command because of recv
-                        # size
-                        sock.send("^Welcome {u}\n".format(u=username))
+                        #sock.send("^Welcome {u}\n".format(u=username))
                         sock.send("!join {r}\n".format(r=DEFAULT_ROOM))
 
             else:
