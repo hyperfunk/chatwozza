@@ -33,8 +33,8 @@ def client_message_handler(client, username, data):
     avail_rooms = members_rooms[client]
     if room in avail_rooms:
         room_users = room_members[room]
-        text = " ".join(message)
-        message_room(room, room_users, client, username, text)
+        #text = " ".join(message)
+        message_room(room, room_users, client, username, message)
 
 message_handlers = defaultdict(lambda: client_message_handler)
 message_handlers.update({
