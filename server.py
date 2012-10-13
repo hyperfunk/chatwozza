@@ -70,8 +70,8 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
                 else:
                     username = data[:-1]
                     if username in users.values():
-                        sock.send("%Username already taken\n")
-                        sock.send(USERNAME_PROMPT)
+                        sock.send("%Username already taken\n{0}".format(
+                            USERNAME_PROMPT[1:]))
                     else:
                         users[sock] = username
                         members_rooms[sock].append(DEFAULT_ROOM)
