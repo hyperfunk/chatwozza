@@ -1,11 +1,5 @@
 #!/usr/bin/python2
 
-#
-# could have a dict { '%' : func(), '!': func(), ... }
-# that you simply look up for message[0] the nthen pass func message [1:]
-# with a default being a callable that just prints it as though it's a user
-#
-
 import socket
 import select
 
@@ -14,31 +8,38 @@ from collections import defaultdict
 USERNAME_PROMPT = "%Please choose a user name: "
 DEFAULT_ROOM = 'main'
 
-def parse_message(message):
-    m_split = message.split()
-    room, message = m_split[0], m_split[1:]
-    return room, message
-
 def message_room(target_room, room_members, sender, sender_id, message):
     targets = [c for c in room_members if c is not sender]
     for client in targets:
         client.send("{r} {u} {m}".format(r=target_room, u=sender_id,
             m=message))
 
-def is_client_request(message_leader):
-    return message_leader[0] == '/'
+def parse_client_message(message):
+    m_split = message.split()
+    room, message = m_split[0], ' '.join(m_split[1:])
+    return room, message
 
 def parse_client_request(message):
-    request = message[0][1:]
-    args = message[1:]
-    return request, args
+    m_split = message.split()
+    room, request, args = m_split[0], m_split[1][1:], m_split[2:]
+    return room, request, args
 
-#def client_message_handler(data): pass
-#message_handlers = defaultdict(client_message_handler)
-#message_handlers.update({
-    #'/': client_request_handler,
-    #}
+def client_request_handler(client, username, data):
+    room, request, args = parse_client_request(data)
+    print "received client request", request
 
+def client_message_handler(client, username, data):
+    room, message = parse_client_message(data)
+    avail_rooms = members_rooms[client]
+    if room in avail_rooms:
+        room_users = room_members[room]
+        text = " ".join(message)
+        message_room(room, room_users, client, username, text)
+
+message_handlers = defaultdict(lambda: client_message_handler)
+message_handlers.update({
+    '/': client_request_handler,
+    })
 
 def server_loop(server_socket, users, rset, wset, eset, rooms,
         members_rooms, room_members):
@@ -58,16 +59,10 @@ def server_loop(server_socket, users, rset, wset, eset, rooms,
             data = sock.recv(4096)
             if data:
                 if sock in users:
-                    room, message = parse_message(data)
-                    if is_client_request(message[0]):
-                        request, args = parse_client_request(message)
-                    else:
-                        avail_rooms = members_rooms[sock]
-                        if room in avail_rooms:
-                            room_users = room_members[room]
-                            text = " ".join(message)
-                            message_room(room, room_users, sock, users[sock],
-                                    text)
+                    room, message = parse_client_message(data)
+                    username = users[sock]
+                    handler = message_handlers[message[0]]
+                    handler(sock, username, data)
                 else:
                     username = data[:-1]
                     if username in users.values():
@@ -114,5 +109,5 @@ if __name__=='__main__':
                     room_members)
     except KeyboardInterrupt:
         s.close()
-    except:
+    finally:
         s.close()
