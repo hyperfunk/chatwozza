@@ -22,7 +22,8 @@ def parse_message(message):
 def message_room(target_room, room_members, sender, sender_id, message):
     targets = [c for c in room_members if c is not sender]
     for client in targets:
-        client.send("{r} {u} {m}".format(r=target_room, u=sender_id, m=message))
+        client.send("{r} {u} {m}".format(r=target_room, u=sender_id,
+            m=message))
 
 def is_client_request(message_leader):
     return message_leader[0] == '/'
