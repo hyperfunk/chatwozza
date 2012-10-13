@@ -50,7 +50,7 @@ ROOM_MESSAGE, SERVER_MESSAGE, SERVER_COMMAND = range(1,4)
 def room_message_handler(data):
     data = data.split()
     target_room, sender, message = data[0], data[1], ' '.join(data[2:])
-    show_message(target_room, sender, message)
+    show_message(target_room, sender, message+'\n')
     return ROOM_MESSAGE
 
 def server_message_handler(data):
