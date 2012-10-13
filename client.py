@@ -48,8 +48,8 @@ def join_room(room):
 ROOM_MESSAGE, SERVER_MESSAGE, SERVER_COMMAND = range(1,4)
 
 def room_message_handler(data):
-    data = data.rstrip('\n')
-    target_room, sender, message = message[0], message[1], message[2:]
+    data = data.split()
+    target_room, sender, message = data[0], data[1], ' '.join(data[2:])
     show_message(target_room, sender, message)
     return ROOM_MESSAGE
 
@@ -65,8 +65,9 @@ def server_command_handler(data):
     return SERVER_COMMAND
 
 
-message_handlers=defaultdict(room_message_handler)
+message_handlers=defaultdict(lambda: room_message_handler)
 message_handlers.update({ # prefix : function
+        #'m': room_message_handler,
         '%': server_message_handler,
         '!': server_command_handler,
         })
@@ -119,8 +120,6 @@ try:
             else:
                 data = s.recv(4096)
                 if data:
-                    print "received:", data, "[from server]"
-                    print data[0]
                     handler = message_handlers[data[0]]
                     handler(data)
 
