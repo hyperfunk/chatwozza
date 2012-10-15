@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--curses', action='store_true')
     return parser.parse_args()
 
-def setup_curses(screen, initial_text):
+def setup_curses(screen):
     curses.start_color()
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -42,7 +42,7 @@ def setup_curses(screen, initial_text):
     chat_window.bkgd(' ', curses.color_pair(2))
     chat_window.attron(curses.A_BOLD)
     chat_window.scrollok(True)
-    chat_window.addstr(initial_text + "\n",
+    chat_window.addstr(current_room + "\n",
             curses.color_pair(4) | curses.A_BOLD)
 
     input_window.refresh()
@@ -87,10 +87,20 @@ def show_message(room, sender, message):
 def notify_client(f):
     def notify(*args):
         f(*args)
-        print "Current room is {r}".format(r=current_room)
+        fmt_current = "Current room is {r}".format(r=current_room)
+        if chat_window is None:
+            print  fmt_current
+        else:
+            chat_window.addstr(fmt_current + "\n",
+                    curses.color_pair(4) | curses.A_BOLD)
+
         other_rooms = available_rooms.difference([current_room])
         if len(other_rooms) > 0:
-            print "also in {c}".format(c=','.join(other_rooms))
+            if chat_window is None:
+                print "also in {c}".format(c=','.join(other_rooms))
+            else:
+                chat_window.addstr(fmt_other + "\n",
+                        curses.color_pair(4) | curses.A_BOLD)
     return notify
 
 # server command executors
@@ -175,7 +185,7 @@ def main():
             global input_window
             global chat_window
             screen = curses.initscr()
-            input_window, chat_window = setup_curses(screen, data)
+            input_window, chat_window = setup_curses(screen)
 
         # Main chat exchange loop
         while True:
