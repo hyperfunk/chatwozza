@@ -163,6 +163,7 @@ def main():
         while True:
             handler = message_handlers[data[0]]
             handler(data)
+            global user_name
             user_name = raw_input()
             s.send(user_name + "\n")
             data = s.recv(4096)
@@ -171,7 +172,6 @@ def main():
                 break
 
         if args.curses:
-            print "setting up curses screen"
             global input_window
             global chat_window
             screen = curses.initscr()
@@ -192,6 +192,7 @@ def main():
 
     finally:
         s.close()
+        curses.endwin()
 
 if __name__=='__main__':
     main()
