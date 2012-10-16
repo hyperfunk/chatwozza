@@ -108,6 +108,6 @@ if __name__=='__main__':
             server_loop(s, users, rset, wset, rset, rooms, members_rooms,
                     room_members)
     except KeyboardInterrupt:
-        s.close()
+        pass
     finally:
         s.close()
