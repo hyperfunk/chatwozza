@@ -39,7 +39,9 @@ def server_loop(server_socket, users, rset, wset, eset):
             else:
                 sock.close()
                 rset.remove(sock)
-                users.pop(sock)
+                if sock in users:
+                    del users[sock]
+                    #users.pop(sock)
 
 if __name__=='__main__':
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
