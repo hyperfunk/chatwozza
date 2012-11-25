@@ -202,7 +202,8 @@ def main():
 
     finally:
         s.close()
-        curses.endwin()
+        if args.curses:
+            curses.endwin()
 
 if __name__=='__main__':
     main()
