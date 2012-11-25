@@ -10,18 +10,27 @@ import argparse
 
 from collections import defaultdict
 
+server_ip, server_port = '127.0.0.1', 8000
 current_room = ''
 available_rooms = set()
 user_name = ''
 input_window = None
 chat_window = None
+ui_mode = None
 
 def parse_args():
     parser = argparse.ArgumentParser(description='foray into sockets')
     parser.add_argument('--curses', action='store_true')
-    return parser.parse_args()
+    parser.add_argument('--gui', action='store_true')
+    args = parser.parse_args()
+    if args.curses and args.gui:
+        parser.print_help()
+        print "Must choose only gui or curses interface"
+        exit()
+    return args
 
-def setup_curses(screen):
+def setup_curses():
+    screen = curses.initscr()
     curses.start_color()
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -48,7 +57,10 @@ def setup_curses(screen):
     input_window.refresh()
     chat_window.refresh()
 
-    return input_window, chat_window
+    return screen, input_window, chat_window
+
+def setup_tk():
+    pass
 
 def user_input(sock):
     if input_window is not None:
@@ -155,10 +167,23 @@ commands = {
         'avail-': remove_room,
         }
 
+setup_func = {
+        'curses': setup_curses,
+        'tk': setup_tk,
+        }
+
 def main():
     args = parse_args()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('127.0.0.1',8000))
+    try:
+        s.connect((server_ip, server_port))
+    except socket.error:
+        print "Unable to communicate with server @ {ip}:{port}".format(
+                ip=server_ip, port=server_port)
+        exit()
+
+    global ui_mode
+    ui_mode = filter(lambda x: getattr(args, x, None), setup_func.keys())
 
 # Add stdin to the rset so that we know when to read from the user
     rset = [ s, sys.stdin ]
@@ -181,11 +206,9 @@ def main():
             if handler(data) is SERVER_COMMAND:
                 break
 
-        if args.curses:
-            global input_window
-            global chat_window
-            screen = curses.initscr()
-            input_window, chat_window = setup_curses(screen)
+        if ui_mode:
+            global screen, input_window, chat_window
+            screen, input_window, chat_window = setup_func[ui_mode[0]]()
 
         # Main chat exchange loop
         while True:
