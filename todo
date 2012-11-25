@@ -1,3 +1,18 @@
 Probably do the client in curses
 
-Possibly a GUI for the n00bs out there too (in Tk)
+Currently crashes on second conenct from same client
+Connection from 127.0.0.1
+Connection from 127.0.0.1
+Traceback (most recent call last):
+  File "./server.py", line 109, in <module>
+    room_members)
+  File "./server.py", line 65, in server_loop
+    handler(sock, username, data)
+  File "./server.py", line 37, in client_message_handler
+    message_room(room, room_users, client, username, message)
+  File "./server.py", line 15, in message_room
+    m=message))
+  File "/usr/lib/python2.7/socket.py", line 170, in _dummy
+    raise error(EBADF, 'Bad file descriptor')
+socket.error: [Errno 9] Bad file descriptor
+
