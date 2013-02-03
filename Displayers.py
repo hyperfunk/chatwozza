@@ -1,6 +1,30 @@
 import curses
 import curses.textpad
 
+import tkinter as tk
+from tkinter import Tk, RIGHT, LEFT, BOTH, RAISED, Frame, Button, ttk
+from tkinter.ttk import Style
+
+#########################################################
+# Displayer classes must implement:                     #
+#   get_message, show_room_name, show_message and close #
+#########################################################
+
+#class TkDisplayer(Tk):
+    #def __init__(self):
+#        Tk.__init__(self)
+#        self.initUI()
+
+    #def initUI(self):
+
+
+    #def close(self):
+#        from _tkinter import TclError
+#        try:
+#            self.destroy()
+#        except TclError as e:
+#            print(e)
+
 class CursesDisplayer(object):
     def __init__(self):
         self.root = curses.initscr()
