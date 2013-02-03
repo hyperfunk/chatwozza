@@ -1,7 +1,5 @@
 #!/usr/bin/python2
 
-import curses
-import curses.textpad
 import re
 import socket
 import select
@@ -10,13 +8,16 @@ import argparse
 
 from collections import defaultdict
 
+from Displayers import CursesDisplayer
+
 server_ip, server_port = '127.0.0.1', 8000
 current_room = ''
 available_rooms = set()
 user_name = ''
-input_window = None
-chat_window = None
-ui_mode = None
+displayer = None
+
+def get_displayer(args):
+    return CursesDisplayer()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='foray into sockets')
@@ -29,56 +30,14 @@ def parse_args():
         exit()
     return args
 
-def setup_curses():
-    screen = curses.initscr()
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.curs_set(0)
-
-    height, width = screen.getmaxyx()
-
-    # input_window is the box for user input
-    input_window = curses.newwin(1, width, height-1, 0)
-    input_window.bkgd(' ', curses.color_pair(1))
-    input_window.attron(curses.A_BOLD)
-    input_window.scrollok(True)
-
-    # chat_window is updated with other user data
-    chat_window = curses.newwin(height-1, width, 0, 0)
-    chat_window.bkgd(' ', curses.color_pair(2))
-    chat_window.attron(curses.A_BOLD)
-    chat_window.scrollok(True)
-    chat_window.addstr(current_room + "\n",
-            curses.color_pair(4) | curses.A_BOLD)
-
-    input_window.refresh()
-    chat_window.refresh()
-
-    return screen, input_window, chat_window
-
-def setup_tk():
-    pass
-
 def user_input(sock):
-    if input_window is not None:
-        data = input_window.getstr()
-    else:
-        data = raw_input()
+    data = displayer.get_message()
     if data:
         fmt_message = '{room} {message}\n'.format(room=current_room,
                 message=data)
         sock.send(fmt_message)
-        if chat_window is not None and input_window is not None:
-            chat_text = '{u}: {d}\n'.format(u=user_name, d=data)
-            chat_window.addstr(chat_text,
-                    (curses.color_pair(3) | curses.A_BOLD))
-            chat_window.refresh()
-            input_window.clear()
-            input_window.refresh()
-
+        chat_text = '{u}: {d}\n'.format(u=user_name, d=data)
+        displayer.show_message(chat_text)
 
 def chat_update(sock):
     data = sock.recv(4096)
@@ -89,30 +48,17 @@ def chat_update(sock):
 def show_message(room, sender, message):
     if room == current_room:
         fmt_message = "{u}: {m}".format(u=sender, m=message)
-        if chat_window is None:
-            sys.stdout.write(fmt_message)
-            sys.stdout.flush()
-        else:
-            chat_window.addstr(fmt_message)
-            chat_window.refresh()
+        displayer.show_message(fmt_message)
 
 def notify_client(f):
     def notify(*args):
         f(*args)
-        fmt_current = "Current room is {r}".format(r=current_room)
-        if chat_window is None:
-            print  fmt_current
-        else:
-            chat_window.addstr(fmt_current + "\n",
-                    curses.color_pair(4) | curses.A_BOLD)
-
+        #fmt_current = "Current room is {r}".format(r=current_room)
+        displayer.show_room_name(current_room)
         other_rooms = available_rooms.difference([current_room])
         if len(other_rooms) > 0:
-            if chat_window is None:
-                print "also in {c}".format(c=','.join(other_rooms))
-            else:
-                chat_window.addstr(fmt_other + "\n",
-                        curses.color_pair(4) | curses.A_BOLD)
+            fmt_other = "also in {c}".format(c=','.join(other_rooms))
+            displayer.show_message(fmt_other)
     return notify
 
 # server command executors
@@ -143,7 +89,6 @@ def room_message_handler(data):
     return ROOM_MESSAGE
 
 def server_message_handler(data):
-    print "Called server_message_handler"
     show_message(current_room, "SERVER", data[1:])
     return SERVER_MESSAGE
 
@@ -168,11 +113,6 @@ commands = {
         'avail-': remove_room,
         }
 
-setup_func = {
-        'curses': setup_curses,
-        'tk': setup_tk,
-        }
-
 def main():
     args = parse_args()
 
@@ -184,11 +124,8 @@ def main():
                 ip=server_ip, port=server_port)
         exit()
 
-    global ui_mode
-    # for each setup_func key check if the args has a member which is true: e.g.
-    # if called "--curses" args has a member "args.curses" whcih is true so the
-    # lambda call evaluates to true
-    ui_mode = filter(lambda x: getattr(args, x, None), setup_func.keys())
+    global displayer
+    displayer = get_displayer(args)
 
     # Add stdin to the rset so that we know when to read from the user
     rset = [ client_socket, sys.stdin ]
@@ -203,7 +140,7 @@ def main():
         handler(data)
         while True:
             global user_name
-            user_name = raw_input()
+            user_name = displayer.get_message()
             client_socket.send(user_name + "\n")
             data = client_socket.recv(4096)
             handler = message_handlers[data[0]]
@@ -212,27 +149,22 @@ def main():
             if handler(data) is SERVER_COMMAND:
                 break
 
-        if ui_mode:
-            global screen, input_window, chat_window
-            screen, input_window, chat_window = setup_func[ui_mode[0]]()
-
         # Main chat exchange loop
         while True:
             readable, writable, excepts = select.select(rset, wset, rset)
 
             for fd in readable:
                 if fd is sys.stdin:
-                    user_input(s)
+                    user_input(client_socket)
                 else:
-                    chat_update(s)
+                    chat_update(client_socket)
 
     except KeyboardInterrupt:
         pass
 
     finally:
         client_socket.close()
-        if args.curses:
-            curses.endwin()
+        displayer.close()
 
 if __name__=='__main__':
     main()
