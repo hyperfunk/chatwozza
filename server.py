@@ -10,6 +10,8 @@ import select
 
 from collections import defaultdict
 
+from Crypto.PublicKey import RSA
+
 NAME_MAX_LENGTH  = 10
 USERNAME_PROMPT = "%Please choose a user name (max length {}): ".format(
         NAME_MAX_LENGTH)
@@ -118,6 +120,14 @@ def server_loop():
                 cleanup_client(sock)
 
 if __name__=='__main__':
+    # generate key pair`
+    key = RSA.generate(2048)
+    public_key = key.publickey()
+    public_key_str = public_key.exportKey()
+    print key.exportKey()
+    print public_key_str
+    exit()
+
     # set up listening socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(("0.0.0.0", 8000))
