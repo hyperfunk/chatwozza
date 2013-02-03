@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+# -*- coding: utf-8 -*-
 
 # server.py version 0.1
 
@@ -121,12 +122,12 @@ def server_loop():
 
 if __name__=='__main__':
     # generate key pair`
-    key = RSA.generate(2048)
-    public_key = key.publickey()
-    public_key_str = public_key.exportKey()
-    print key.exportKey()
-    print public_key_str
-    exit()
+    #key = RSA.generate(2048)
+    #public_key = key.publickey()
+    #public_key_str = public_key.exportKey()
+    #print key.exportKey()
+    #print public_key_str
+    #exit()
 
     # set up listening socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

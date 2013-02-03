@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
+
 import curses
 import curses.textpad
 
-import tkinter as tk
-from tkinter import Tk, RIGHT, LEFT, BOTH, RAISED, Frame, Button, ttk
-from tkinter.ttk import Style
+#import tkinter as tk
+#from tkinter import Tk, RIGHT, LEFT, BOTH, RAISED, Frame, Button, ttk
+#from tkinter.ttk import Style
 
 #########################################################
 # Displayer classes must implement:                     #
