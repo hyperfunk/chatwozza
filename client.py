@@ -143,6 +143,7 @@ def room_message_handler(data):
     return ROOM_MESSAGE
 
 def server_message_handler(data):
+    print "Called server_message_handler"
     show_message(current_room, "SERVER", data[1:])
     return SERVER_MESSAGE
 
@@ -174,35 +175,40 @@ setup_func = {
 
 def main():
     args = parse_args()
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        s.connect((server_ip, server_port))
+        client_socket.connect((server_ip, server_port))
     except socket.error:
         print "Unable to communicate with server @ {ip}:{port}".format(
                 ip=server_ip, port=server_port)
         exit()
 
     global ui_mode
+    # for each setup_func key check if the args has a member which is true: e.g.
+    # if called "--curses" args has a member "args.curses" whcih is true so the
+    # lambda call evaluates to true
     ui_mode = filter(lambda x: getattr(args, x, None), setup_func.keys())
 
-# Add stdin to the rset so that we know when to read from the user
-    rset = [ s, sys.stdin ]
-
-# Null wset
+    # Add stdin to the rset so that we know when to read from the user
+    rset = [ client_socket, sys.stdin ]
+    # Null wset
     wset = []
 
     try:
-        data = s.recv(4096)
+        data = client_socket.recv(4096)
 
         # Username Prompt Loop
+        handler = message_handlers[data[0]]
+        handler(data)
         while True:
-            handler = message_handlers[data[0]]
-            handler(data)
             global user_name
             user_name = raw_input()
-            s.send(user_name + "\n")
-            data = s.recv(4096)
+            client_socket.send(user_name + "\n")
+            data = client_socket.recv(4096)
             handler = message_handlers[data[0]]
+            # keep prompting for username until receiving a command from the
+            # server
             if handler(data) is SERVER_COMMAND:
                 break
 
@@ -224,7 +230,7 @@ def main():
         pass
 
     finally:
-        s.close()
+        client_socket.close()
         if args.curses:
             curses.endwin()
 
