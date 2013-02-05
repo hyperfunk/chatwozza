@@ -27,6 +27,31 @@ rooms = set([DEFAULT_ROOM])
 members_rooms = defaultdict(list)
 # rooms
 room_members = defaultdict(list)
+# keys:
+#   do we want to generate a key for each user?
+SERVER_PRIVATE_KEY = RSA.generate(2048)
+SERVER_PUBLIC_KEY = SERVER_PRIVATE_KEY.publickey()
+SERVER_PRIVATE_KEY_STR = SERVER_PRIVATE_KEY.exportKey()
+SERVER_PUBLIC_KEY_STR = SERVER_PUBLIC_KEY.exportKey()
+
+class User(object):
+    def __init__(self, socket, username=None, rooms=None, pub_key=None):
+        self.socket = socket
+        self.username = username
+        self.rooms = rooms
+        self.pub_key = pub_key
+
+    def send_message(self, message):
+        if self.pub_key:
+            send_encrypted_message(self.socket, message, self.pub_key)
+        else:
+            self.socket.send(message)
+
+    def read_message(self, message_length=4096):
+        return self.socket.read(message_length)
+
+def send_encrypted_message(socket, message, key):
+    socket.send(key.encrypt(message,0)[0])
 
 def cleanup_client(client):
     print "Client leaving"
@@ -84,11 +109,12 @@ def server_loop():
         # if we are accepting a new client
         if sock is server_socket:
             fd, ip = sock.accept()
-
             if ip != '':
+                # send our public key:
                 print "Connection from {addr}".format(addr=ip[0])
                 rset.append(fd)
-                fd.send(USERNAME_PROMPT)
+                fd.send(SERVER_PUBLIC_KEY_STR)
+                #send_encrypted_message(fd, USERNAME_PROMPT, SERVER_PRIVATE_KEY)
         # cuurent client is sending a message
         else:
             data = sock.recv(4096)
@@ -103,32 +129,28 @@ def server_loop():
                 else:
                     username = data[:-1]
                     if username in users.values():
-                        sock.send("%Username already taken\n{0}".format(
-                            USERNAME_PROMPT[1:]))
+                        message = "%Username already taken\n{0}".format(
+                            USERNAME_PROMPT[1:])
+                        send_encrypted_message(sock, message,
+                                SERVER_PRIVATE_KEY)
                     # prevent blank username
                     elif len(username) < 1 or len(username) > NAME_MAX_LENGTH:
-                        sock.send("%Invalid username length\n{0}".format(
-                            USERNAME_PROMPT[1:]))
+                        message = "%Invalid username length\n{0}".format(
+                            USERNAME_PROMPT[1:])
+                        send_encrypted_message(sock, message, key)
                     # valid username: setup user
                     else:
                         users[sock] = username
                         members_rooms[sock].append(DEFAULT_ROOM)
                         room_members[DEFAULT_ROOM].append(sock)
-                        sock.send("!join {r}\n".format(r=DEFAULT_ROOM))
+                        message = "!join {r}\n".format(r=DEFAULT_ROOM)
+                        send_encrypted_message(sock, message, key)
 
             # client has left: cleanup
             else:
                 cleanup_client(sock)
 
 if __name__=='__main__':
-    # generate key pair`
-    #key = RSA.generate(2048)
-    #public_key = key.publickey()
-    #public_key_str = public_key.exportKey()
-    #print key.exportKey()
-    #print public_key_str
-    #exit()
-
     # set up listening socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(("0.0.0.0", 8000))
