@@ -8,6 +8,7 @@ import sys
 import argparse
 
 from collections import defaultdict
+from Crypto.PublicKey import RSA
 
 from Displayers import CursesDisplayer
 
@@ -16,6 +17,9 @@ current_room = ''
 available_rooms = set()
 user_name = ''
 displayer = None
+
+SERVER_PUBLIC_KEY_STR = None
+SERVER_PUBLIC_KEY = None
 
 def get_displayer(args):
     return CursesDisplayer()
@@ -126,7 +130,7 @@ def main():
         exit()
 
     global displayer
-    displayer = get_displayer(args)
+    #displayer = get_displayer(args)
 
     # Add stdin to the rset so that we know when to read from the user
     rset = [ client_socket, sys.stdin ]
@@ -134,7 +138,16 @@ def main():
     wset = []
 
     try:
-        data = client_socket.recv(4096)
+        # receive the server public key
+        global SERVER_PUBLIC_KEY_STR
+        SERVER_PUBLIC_KEY_STR = client_socket.recv(2048)
+        global SERVER_PUBLIC_KEY
+        SERVER_PUBLIC_KEY = RSA.importKey(SERVER_PUBLIC_KEY_STR)
+
+        crypt_data = client_socket.recv(4096)
+        data = SERVER_PUBLIC_KEY.decrypt(crypt_data)
+        print data
+        exit()
 
         # Username Prompt Loop
         handler = message_handlers[data[0]]
@@ -165,7 +178,7 @@ def main():
 
     finally:
         client_socket.close()
-        displayer.close()
+        #displayer.close()
 
 if __name__=='__main__':
     main()
